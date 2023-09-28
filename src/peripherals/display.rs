@@ -8,27 +8,21 @@ use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 
-use std::time::Duration;
-
+use crate::utils::{X_PIXELS, Y_PIXELS};
 use crate::utils::OFstate;
+
+const TITLE: &str = "4ante's Chip-8 Emulator";
+const BACKGROUND: Color = Color::BLACK;
+const DRAW_COLOR: Color = Color::WHITE;
 
 const SCREEN_WIDTH: u32 = 960;
 const SCREEN_HEIGHT: u32 = SCREEN_WIDTH / 2;
-const X_PIXELS: u32 = 64;
-const Y_PIXELS: u32 = 32;
 const PIXEL_SIZE: u32 = SCREEN_WIDTH / X_PIXELS;
-const FPS: u32 = 60;
 
 
 pub struct Display {
     canvas: Canvas<Window>,
     event_pump: EventPump,
-    pub pixel_state: [[Pixel; 64]; 32],
-}
-
-#[derive(Clone, Copy)]
-pub struct Pixel {
-    pub state: OFstate,
 }
 
 impl Display {
@@ -36,7 +30,7 @@ impl Display {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
     
-        let window = video_subsystem.window("rust-sdl2 demo", SCREEN_WIDTH, SCREEN_HEIGHT)
+        let window = video_subsystem.window(TITLE, SCREEN_WIDTH, SCREEN_HEIGHT)
             .position_centered()
             .build()
             .unwrap();
@@ -44,22 +38,18 @@ impl Display {
         let canvas = window.into_canvas().build().unwrap();
         let event_pump = sdl_context.event_pump().unwrap();
 
-        Display { canvas, event_pump, pixel_state: [[Pixel{state: OFstate::OFF}; 64]; 32]}
+        Display { canvas, event_pump }
     }
 
-    pub fn run(&mut self) {
-        //remember to remove dupe
-        //while self.handle_events {
+    pub fn run(&mut self, vram: [[OFstate; 64]; 32]) {
         self.handle_events();
-        self.clear();
+        self.draw_vram(vram);
 
         self.canvas.present();
-           // ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / FPS));
-       //}
     }
 
     pub fn clear(&mut self) {
-        self.canvas.set_draw_color(Color::BLACK);
+        self.canvas.set_draw_color(BACKGROUND);
         self.canvas.clear();
     }
 
@@ -68,7 +58,7 @@ impl Display {
             match event {
                 Event::Quit {..} |
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                    return false;
+                    panic!("Game Purposfully Quit :)")
                 },
 
                 Event::KeyDown { scancode: Some(Scancode::Num1), .. } => {
@@ -128,18 +118,19 @@ impl Display {
         true
     }
 
-    pub fn toggle_pixel(&mut self, x: u8, y: u8, state: OFstate) {
-        let screen_x = x as u32 * PIXEL_SIZE;
-        let screen_y = y as u32 * PIXEL_SIZE;
+    pub fn draw_vram(&mut self, vram: [[OFstate; 64]; 32]) {
+        self.clear();
+        for y in 0..Y_PIXELS {
+            let screen_y = y as u32 * PIXEL_SIZE;
+            for x in 0..X_PIXELS {
+                let screen_x = x as u32 * PIXEL_SIZE;
+                match vram[y as usize][x as usize] {
+                    OFstate::ON => self.canvas.set_draw_color(DRAW_COLOR),
+                    OFstate::OFF => self.canvas.set_draw_color(BACKGROUND),
+                }
 
-        match state {
-            OFstate::ON => self.canvas.set_draw_color(Color::WHITE),
-            OFstate::OFF => self.canvas.set_draw_color(Color::BLACK),
+                self.canvas.fill_rect(Rect::new(screen_x as i32, screen_y as i32, PIXEL_SIZE, PIXEL_SIZE)).unwrap();
+            }
         }
-        
-        self.canvas.fill_rect(Rect::new(screen_x as i32, screen_y as i32, PIXEL_SIZE, PIXEL_SIZE));
-        self.pixel_state[x as usize][y as usize].state = state;
     }
-    
 }
-
