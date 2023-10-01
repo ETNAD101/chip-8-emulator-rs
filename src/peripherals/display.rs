@@ -19,10 +19,14 @@ const SCREEN_WIDTH: u32 = 960;
 const SCREEN_HEIGHT: u32 = SCREEN_WIDTH / 2;
 const PIXEL_SIZE: u32 = SCREEN_WIDTH / X_PIXELS;
 
-
 pub struct Display {
     canvas: Canvas<Window>,
     event_pump: EventPump,
+}
+
+pub struct PeripheralMemory {
+    pub vram: [[OFstate; 64];32],
+    pub key_list: [bool; 16],
 }
 
 impl Display {
@@ -41,10 +45,9 @@ impl Display {
         Display { canvas, event_pump }
     }
 
-    pub fn run(&mut self, vram: [[OFstate; 64]; 32]) {
-        self.handle_events();
-        self.draw_vram(vram);
-
+    pub fn run(&mut self, p_mem: &mut PeripheralMemory) {
+        self.handle_events(&mut p_mem.key_list);
+        self.draw_vram(p_mem.vram);
         self.canvas.present();
     }
 
@@ -53,7 +56,7 @@ impl Display {
         self.canvas.clear();
     }
 
-    fn handle_events(&mut self) -> bool {
+    fn handle_events(&mut self, key_list: &mut [bool]) -> bool {
         for event in self.event_pump.poll_iter() {
             match event {
                 Event::Quit {..} |
@@ -61,57 +64,46 @@ impl Display {
                     panic!("Game Purposfully Quit :)")
                 },
 
-                Event::KeyDown { scancode: Some(Scancode::Num1), .. } => {
-                    println!("1");
-                },
-                Event::KeyDown { scancode: Some(Scancode::Num2), .. } => {
-                    println!("2");
-                },
-                Event::KeyDown { scancode: Some(Scancode::Num3), .. } => {
-                    println!("3");
-                },
-                Event::KeyDown { scancode: Some(Scancode::Num4), .. } => {
-                    println!("C");
-                },
-                Event::KeyDown { scancode: Some(Scancode::Q), .. } => {
-                    println!("4");
-                },
-                Event::KeyDown { scancode: Some(Scancode::W), .. } => {
-                    println!("5");
-                },
-                Event::KeyDown { scancode: Some(Scancode::E), .. } => {
-                    println!("6");
-                },
-                Event::KeyDown { scancode: Some(Scancode::R), .. } => {
-                    println!("D");
-                },
-                Event::KeyDown { scancode: Some(Scancode::A), .. } => {
-                    println!("7");
-                },
-                Event::KeyDown { scancode: Some(Scancode::S), .. } => {
-                    println!("8");
-                },
-                Event::KeyDown { scancode: Some(Scancode::D), .. } => {
-                    println!("9");
-                },
-                Event::KeyDown { scancode: Some(Scancode::F), .. } => {
-                    println!("E");
-                },
-                Event::KeyDown { scancode: Some(Scancode::Z), .. } => {
-                    println!("A");
-                },
-                Event::KeyDown { scancode: Some(Scancode::X), .. } => {
-                    println!("0");
-                },
-                Event::KeyDown { scancode: Some(Scancode::C), .. } => {
-                    println!("B");
-                },
-                Event::KeyDown { scancode: Some(Scancode::V), .. } => {
-                    println!("F");
+                Event::KeyDown { scancode, .. } => match scancode {
+                    Some(Scancode::Num1) => key_list[0x01] = true,
+                    Some(Scancode::Num2) => key_list[0x02] = true,
+                    Some(Scancode::Num3) => key_list[0x03] = true,
+                    Some(Scancode::Num4) => key_list[0x0c] = true,
+                    Some(Scancode::Q) => key_list[0x04] = true,
+                    Some(Scancode::W) => key_list[0x05] = true,
+                    Some(Scancode::E) => key_list[0x06] = true,
+                    Some(Scancode::R) => key_list[0x0d] = true,
+                    Some(Scancode::A) => key_list[0x07] = true,
+                    Some(Scancode::S) => key_list[0x08] = true,
+                    Some(Scancode::D) => key_list[0x09] = true,
+                    Some(Scancode::F) => key_list[0x0e] = true,
+                    Some(Scancode::Z) => key_list[0x0a] = true,
+                    Some(Scancode::X) => key_list[0x00] = true,
+                    Some(Scancode::C) => key_list[0x0b] = true,
+                    Some(Scancode::V) => key_list[0x0f] = true,
+                    _ => break,
                 },
 
-
-
+                Event::KeyUp { scancode, .. } => match scancode {
+                    Some(Scancode::Num1) => key_list[0x01] = false,
+                    Some(Scancode::Num2) => key_list[0x02] = false,
+                    Some(Scancode::Num3) => key_list[0x03] = false,
+                    Some(Scancode::Num4) => key_list[0x0c] = false,
+                    Some(Scancode::Q) => key_list[0x04] = false,
+                    Some(Scancode::W) => key_list[0x05] = false,
+                    Some(Scancode::E) => key_list[0x06] = false,
+                    Some(Scancode::R) => key_list[0x0d] = false,
+                    Some(Scancode::A) => key_list[0x07] = false,
+                    Some(Scancode::S) => key_list[0x08] = false,
+                    Some(Scancode::D) => key_list[0x09] = false,
+                    Some(Scancode::F) => key_list[0x0e] = false,
+                    Some(Scancode::Z) => key_list[0x0a] = false,
+                    Some(Scancode::X) => key_list[0x00] = false,
+                    Some(Scancode::C) => key_list[0x0b] = false,
+                    Some(Scancode::V) => key_list[0x0f] = false,
+                    _ => break
+                },
+        
                 _ => {}
             }
         }
