@@ -4,8 +4,10 @@ use rand;
 
 use crate::peripherals::display::Display;
 use crate::peripherals::display::PeripheralMemory;
+use crate::peripherals::display::TextData;
 use crate::utils::OFstate;
 
+use crate::utils::TextType;
 use crate::utils::X_PIXELS;
 use crate::utils::Y_PIXELS;
 
@@ -54,7 +56,7 @@ impl Emulator {
         Emulator {
             display: Display::new(),
             memory: [0; MEM_SIZE],
-            p_mem: PeripheralMemory { vram: [[OFstate::OFF; 64]; 32], key_list: [false; 16] },
+            p_mem: PeripheralMemory::new([[OFstate::OFF; 64]; 32], [false; 16], Vec::new()),
             stack: [0; STACK_SIZE],
             stack_pointer: 0,
             program_counter: PRGRM_START,
@@ -213,7 +215,8 @@ impl Emulator {
     }
 
     fn get_key(&mut self, x: u8) {
-        println!("Get_key called - x: {:#05x}", x);
+        let msg = format!("Get_key called - x: {:#05x}", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         for i in 0..self.p_mem.key_list.len() {
             if self.p_mem.key_list[i] {
                 self.register_v[x as usize] = i as u8;
@@ -224,6 +227,8 @@ impl Emulator {
     }
 
     fn store_mem(&mut self, x: u8) {
+        let msg = format!("store_mem called - x: {:#05x}", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         for i in 0..=x {
             let value = self.register_v[i as usize];
             let pos = (self.register_i + i as u16) as usize;
@@ -232,6 +237,8 @@ impl Emulator {
     }
 
     fn load_mem(&mut self, x: u8) {
+        let msg = format!("store_mem called - x: {:#05x}", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         for i in 0..=x {
             let pos = (self.register_i + i as u16) as usize;
             let value = self.memory[pos];
@@ -240,50 +247,58 @@ impl Emulator {
     }
 
     fn subroutine(&mut self, nnn: u16) {
-        println!("subroutine called - nnn: {:#05x}", nnn);
+        let msg = format!("subroutine called - nnn: {:#05x}", nnn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.push_stack(self.program_counter);
         self.program_counter = nnn;
     }
 
     fn sub_return(&mut self) {
-        println!("sub return called");
+        let msg = format!("sub return called");
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.program_counter = self.pop_stack();
     }
 
     fn jump(&mut self, nnn: u16) {
-        println!("jump called - nnn: {:#05x}", nnn);
+        let msg = format!("jump called - nnn: {:#05x}", nnn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.program_counter = nnn;
     }
 
     fn offset_jump(&mut self, nnn: u16) {
-        println!("offset_jump called - nnn: {:#05x}", nnn);
+        let msg = format!("offset_jump called - nnn: {:#05x}", nnn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let offset = self.register_v[0x00];
         self.program_counter = nnn + offset as u16;
     }
 
     fn binary_or(&mut self, x: u8, y: u8) {
-        println!("binary_or called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("binary_or called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let vx = self.register_v[x as usize];
         let vy = self.register_v[y as usize];
         self.register_v[x as usize] = vx | vy;
     }
 
     fn binary_and(&mut self, x: u8, y: u8) {
-        println!("binary_and called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("binary_and called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let vx = self.register_v[x as usize];
         let vy = self.register_v[y as usize];
         self.register_v[x as usize] = vx & vy;
     }
 
     fn logical_xor(&mut self, x: u8, y: u8) {
-        println!("logical_xor called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("logical_xor called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let vx = self.register_v[x as usize];
         let vy = self.register_v[y as usize];
         self.register_v[x as usize] = vx ^ vy;
     }
 
     fn font_char(&mut self, x: u8) {
-        println!("font_char called - x: {:#05x}", x,);
+        let msg = format!("font_char called - x: {:#05x}", x,);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_i = (self.register_v[x as usize] as u16 * 5) + 0x50;
     }
 
@@ -295,37 +310,44 @@ impl Emulator {
     }
 
     fn set_delay_timer(&mut self, x: u8) {
-        println!("set_delay_timer called - x: {:#05x}", x,);
+        let msg = format!("set_delay_timer called - x: {:#05x}", x,);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.delay_timer = self.register_v[x as usize];
     }
 
     fn set_sound_timer(&mut self, x: u8) {
-        println!("set_sound_timer called - x: {:#05x}", x,);
+        let msg = format!("set_sound_timer called - x: {:#05x}", x,);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.sound_timer = self.register_v[x as usize];
     }
 
     fn set_vx_to_delay(&mut self, x: u8) {
-        println!("set_vx_to_delay called - x: {:#05x}", x,);
+        let msg = format!("set_vx_to_delay called - x: {:#05x}", x,);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_v[x as usize] = self.delay_timer;
     }
 
     fn set_vx(&mut self, x: u8, nn: u8) {
-        println!("set_vx called - x: {:#05x}, nn: {:#05x}", x, nn);
+        let msg = format!("set_vx called - x: {:#05x}, nn: {:#05x}", x, nn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_v[x as usize] = nn;
     }
 
     fn set_vx_vy(&mut self, x: u8, y: u8) {
-        println!("set_vx_vy called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("set_vx_vy called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_v[x as usize] = self.register_v[y as usize];
     }
     
     fn add_vx(&mut self, x: u8, nn: u8) {
-        println!("add_vx called - x: {:#05x}, nn: {:#05x}", x, nn);
+        let msg = format!("add_vx called - x: {:#05x}, nn: {:#05x}", x, nn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_v[x as usize] = self.register_v[x as usize].wrapping_add(nn);
     }
 
     fn add_vx_vy(&mut self, x: u8, y: u8) {
-        println!("add_vx_vy called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("add_vx_vy called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let vx = self.register_v[x as usize] as u16;
         let vy = self.register_v[y as usize] as u16; 
         let result = vx + vy;
@@ -335,7 +357,8 @@ impl Emulator {
     }
 
     fn vx_minus_vy(&mut self, x: u8, y: u8) {
-        println!("vx_minus_vy called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("vx_minus_vy called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let vx = self.register_v[x as usize];
         let vy = self.register_v[y as usize];
         let result = vx - vy; 
@@ -345,7 +368,8 @@ impl Emulator {
     }
 
     fn vy_minus_vx(&mut self, x: u8, y: u8) {
-        println!("vy_minus_vx called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("vy_minus_vx called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let vx = self.register_v[x as usize];
         let vy = self.register_v[y as usize];
         let result = vy - vx; 
@@ -355,24 +379,28 @@ impl Emulator {
     }
 
     fn shift_left(&mut self, x: u8) {
-        println!("shift_left called - x: {:#05x}", x);
+        let msg = format!("shift_left called - x: {:#05x}", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_v[0x0f] = self.register_v[x as usize] & 1;
         self.register_v[x as usize] >>= 1;
     }
 
     fn shift_right(&mut self, x: u8) {
-        println!("shift_right called - x: {:#05x}", x);
+        let msg = format!("shift_right called - x: {:#05x}", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_v[0x0f] = (self.register_v[x as usize] & 0b10000000) >> 7;
         self.register_v[x as usize] <<= 1;
     }
 
     fn set_index(&mut self, nnn: u16) {
-        println!("set_index called - x: {:#05x}", nnn);
+        let msg = format!("set_index called - x: {:#05x}", nnn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_i = nnn;
     }
 
     fn add_to_index(&mut self, x: u8) {
-        println!("add_to_index called - x: {:#05x}", x);
+        let msg = format!("add_to_index called - x: {:#05x}", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_i += self.register_v[x as usize] as u16;
         if self.register_i > 0x0FFF {
             self.register_v[0x0f] = 1;
@@ -380,35 +408,40 @@ impl Emulator {
     }
 
     fn skip_if_equal(&mut self, x: u8, nn: u8) {
-        println!("skip_if_equal called - x: {:#05x}, nn: {:#05x}", x, nn);
+        let msg = format!("skip_if_equal called - x: {:#05x}, nn: {:#05x}", x, nn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         if self.register_v[x as usize] == nn {
             self.program_counter += 2;
         }
     }
 
     fn skip_not_equal(&mut self, x: u8, nn: u8) {
-        println!("skip_not_equal called - x: {:#05x}, nn: {:#05x}", x, nn);
+        let msg = format!("skip_not_equal called - x: {:#05x}, nn: {:#05x}", x, nn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         if self.register_v[x as usize] != nn {
             self.program_counter += 2;
         }
     }
 
     fn skip_both_equal(&mut self, x: u8, y:u8) {
-        println!("skip_both_equal called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("skip_both_equal called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         if self.register_v[x as usize] == self.register_v[y as usize] {
             self.program_counter += 2;
         }
     }
 
     fn skip_none_equal(&mut self, x: u8, y:u8) {
-        println!("skip_none_equal called - x: {:#05x}, y: {:#05x}", x, y);
+        let msg = format!("skip_none_equal called - x: {:#05x}, y: {:#05x}", x, y);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         if self.register_v[x as usize] != self.register_v[y as usize] {
             self.program_counter += 2;
         }
     }
 
     fn skip_if_key(&mut self, x: u8) {
-        println!("skip_if_key called - x: {:#05x},", x);
+        let msg = format!("skip_if_key called - x: {:#05x},", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let key = self.register_v[x as usize];
         if self.p_mem.key_list[key as usize] {
             self.program_counter += 2;
@@ -416,7 +449,8 @@ impl Emulator {
     }
 
     fn skip_not_key(&mut self, x: u8) {
-        println!("skip_not_key called - x: {:#05x},", x);
+        let msg = format!("skip_not_key called - x: {:#05x},", x);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let key = self.register_v[x as usize];
         if !self.p_mem.key_list[key as usize] {
             self.program_counter += 2;
@@ -424,13 +458,15 @@ impl Emulator {
     }
 
     fn random(&mut self, x: u8, nn: u8) {
-        println!("random called - x: {:#05x}, nn: {:#05x}", x, nn);
+        let msg = format!("random called - x: {:#05x}, nn: {:#05x}", x, nn);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         let num: u8 = rand::random();
         self.register_v[x as usize] = num & nn;
     }
 
     fn disp(&mut self, x: u8, y: u8, n: u8) {
-        println!("display called - x: {:#05x}, y: {:#05x}, n: {:#05x}", x, y, n);
+        let msg = format!("display called - x: {:#05x}, y: {:#05x}, n: {:#05x}", x, y, n);
+        self.p_mem.text.push(TextData::new(TextType::Function, msg));
         self.register_v[0x0f] = 0;
         for offset in 0..n {
             let y_coord = (self.register_v[y as usize] + offset) % Y_PIXELS as u8;

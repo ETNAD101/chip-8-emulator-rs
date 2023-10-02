@@ -4,6 +4,7 @@ TODOS
 2. Fix broken opcodes
 3. Cleanup the code
 4. Work on better error handling and use options & results
+5. fix speed from printing to screen
 */
 
 pub mod peripherals;

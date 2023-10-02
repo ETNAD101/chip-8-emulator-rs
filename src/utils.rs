@@ -6,3 +6,7 @@ pub enum OFstate {
     ON,
     OFF,
 }
+
+pub enum TextType {
+    Function,
+}
